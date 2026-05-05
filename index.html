@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Financial Intelligence Bulletin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f8f9fa; --bg3: #f1f3f5;
+    --text: #1a1a1a; --text2: #6b7280; --text3: #9ca3af;
+    --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+    --up: #16a34a; --dn: #dc2626; --nt: #6b7280;
+    --blue: #1e40af; --bluebg: #dbeafe; --bluetxt: #1e40af;
+    --greenbg: #dcfce7; --greentxt: #166534;
+    --redbg: #fee2e2; --redtxt: #991b1b;
+    --amberbg: #fef3c7; --ambertxt: #92400e;
+    --purplebg: #ede9fe; --purpletxt: #5b21b6;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --accent: #1d4ed8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111827; --bg2: #1f2937; --bg3: #374151;
+      --text: #f9fafb; --text2: #9ca3af; --text3: #6b7280;
+      --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.20);
+      --bluebg: #1e3a5f; --bluetxt: #93c5fd;
+      --greenbg: #14532d; --greentxt: #86efac;
+      --redbg: #7f1d1d; --redtxt: #fca5a5;
+      --amberbg: #78350f; --ambertxt: #fcd34d;
+      --purplebg: #3b0764; --purpletxt: #d8b4fe;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+  /* HEADER */
+  .header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  .header-left h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+  .header-left p { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .live-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--up); font-weight: 500; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .refresh-info { font-size: 10px; color: var(--text3); }
+  .countdown { font-weight: 500; color: var(--text2); }
+
+  /* LAYOUT */
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+  /* TABS */
+  .tabs-wrap { background: var(--bg); border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 57px; z-index: 99; }
+  .tabs { display: flex; gap: 0; overflow-x: auto; }
+  .tab { padding: 10px 14px; font-size: 12px; font-weight: 500; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.on { display: block; }
+
+  /* SECTION LABEL */
+  .sl { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; margin: 16px 0 8px; }
+
+  /* GRIDS */
+  .g4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
+  .g3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
+  .g2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 12px; }
+  @media (max-width: 700px) {
+    .g4 { grid-template-columns: repeat(2,1fr); }
+    .g3 { grid-template-columns: repeat(2,1fr); }
+  }
+
+  /* KPI CARDS */
+  .kpi { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; }
+  .kl { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
+  .kv { font-size: 18px; font-weight: 600; color: var(--text); }
+  .kc { font-size: 11px; margin-top: 3px; }
+  .up { color: var(--up); } .dn { color: var(--dn); } .nt { color: var(--nt); }
+
+  /* TABLES */
+  .tc { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; overflow-x: auto; }
+  .tc table { width: 100%; border-collapse: collapse; min-width: 500px; }
+  .tc th { font-size: 10px; font-weight: 600; color: var(--text2); padding: 8px 11px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg2); white-space: nowrap; }
+  .tc td { font-size: 11px; padding: 8px 11px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .tc tr:last-child td { border-bottom: none; }
+  .tc tr:hover td { background: var(--bg2); }
+
+  /* BADGES */
+  .bdg { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .bg { background: var(--greenbg); color: var(--greentxt); }
+  .br { background: var(--redbg); color: var(--redtxt); }
+  .ba { background: var(--amberbg); color: var(--ambertxt); }
+  .bb { background: var(--bluebg); color: var(--bluetxt); }
+  .bp { background: var(--purplebg); color: var(--purpletxt); }
+
+  /* CHARTS */
+  .chw { position: relative; width: 100%; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .h200 { height: 200px; } .h180 { height: 180px; } .h160 { height: 160px; } .h140 { height: 140px; }
+
+  /* LEGEND */
+  .leg { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 11px; color: var(--text2); }
+  .lsq { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  /* RANGE BUTTONS */
+  .rbtn { padding: 4px 11px; font-size: 11px; border: 1px solid var(--border2); border-radius: 20px; cursor: pointer; background: transparent; color: var(--text2); transition: all .15s; }
+  .rbtn:hover { background: var(--bg2); color: var(--text); }
+  .rbtn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* RISK BAR */
+  .rprow { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .rpnm { font-size: 11px; color: var(--text); width: 100px; flex-shrink: 0; }
+  .rpbg { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+  .rpfill { height: 100%; border-radius: 4px; }
+  .rpval { font-size: 11px; font-weight: 600; width: 50px; text-align: right; flex-shrink: 0; }
+
+  /* NEWS */
+  .newsitem { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 13px; margin-bottom: 7px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .nileft { flex: 1; min-width: 0; }
+  .nisrc { font-size: 10px; color: var(--text2); margin-bottom: 3px; }
+  .nittl { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .nitm { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  /* CALENDAR */
+  .calitem { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .calitem:last-child { border-bottom: none; }
+  .caldate { font-size: 10px; color: var(--text2); width: 80px; flex-shrink: 0; font-weight: 500; }
+  .calevt { font-size: 12px; color: var(--text); }
+  .calimp { margin-top: 3px; }
+
+  /* ALERTS */
+  .alert { padding: 10px 13px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 11px; line-height: 1.6; border-left: 3px solid; }
+  .alert-blue { background: var(--bluebg); color: var(--bluetxt); border-color: #3b82f6; }
+  .alert-amber { background: var(--amberbg); color: var(--ambertxt); border-color: #f59e0b; }
+
+  /* TECHNICAL */
+  .signal { display: inline-flex; align-items: center; font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .sig-buy { background: var(--greenbg); color: var(--greentxt); }
+  .sig-sell { background: var(--redbg); color: var(--redtxt); }
+  .sig-hold { background: var(--amberbg); color: var(--ambertxt); }
+
+  /* PORTFOLIO */
+  .inprow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .inplbl { font-size: 11px; color: var(--text2); width: 140px; flex-shrink: 0; }
+  .inprow input[type=range] { flex: 1; accent-color: var(--accent); }
+  .inpval { font-size: 12px; font-weight: 600; color: var(--text); width: 40px; text-align: right; }
+  .port-summary { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .port-item { text-align: center; }
+  .port-v { font-size: 18px; font-weight: 600; color: var(--text); }
+  .port-l { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  /* RATING ROWS */
+  .ratrow { display: flex; align-items: center; gap: 8px; padding: 7px 11px; border-bottom: 1px solid var(--border); }
+  .ratrow:last-child { border-bottom: none; }
+  .ratc { font-size: 11px; color: var(--text); width: 95px; flex-shrink: 0; }
+  .ratag { font-size: 10px; color: var(--text2); width: 55px; flex-shrink: 0; }
+  .ratdesc { font-size: 10px; color: var(--text2); flex: 1; }
+
+  /* FOOTER */
+  .footer { background: var(--bg); border-top: 1px solid var(--border); padding: 10px 20px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .footer-apis { font-size: 10px; color: var(--text3); }
+  .chip { display: inline-block; font-size: 9px; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border2); color: var(--text2); margin-right: 3px; }
+  .pbar { height: 3px; background: var(--bg3); margin-top: 6px; border-radius: 2px; overflow: hidden; }
+  .pbar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 1s linear; }
+
+  /* BUTTONS */
+  button.cta { padding: 8px 18px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text); cursor: pointer; font-size: 12px; transition: all .15s; }
+  button.cta:hover { background: var(--bg2); }
+
+  /* ECU ALERT */
+  .ecu-note { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 12px; font-size: 10px; color: var(--text2); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Global Financial Intelligence Bulletin</h1>
+    <p>Mercados globales · BVG · BVQ · Bonos Ecuador · LATAM · Cripto · Noticias</p>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span> En vivo</div>
+    <div class="refresh-info">Próximo refresh: <span class="countdown" id="cd">60:00</span></div>
+  </div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab on" onclick="sw('idx',this)">Índices históricos</button>
+    <button class="tab" onclick="sw('ecu',this)">BVG · BVQ · Bonos</button>
+    <button class="tab" onclick="sw('latam',this)">LATAM</button>
+    <button class="tab" onclick="sw('rp',this)">Riesgo país</button>
+    <button class="tab" onclick="sw('tech',this)">Análisis técnico</button>
+    <button class="tab" onclick="sw('port',this)">Simulador portafolio</button>
+    <button class="tab" onclick="sw('macro',this)">Macro y bancos</button>
+    <button class="tab" onclick="sw('comm',this)">Commodities</button>
+    <button class="tab" onclick="sw('cripto',this)">Exchange y cripto</button>
+    <button class="tab" onclick="sw('trade',this)">Comercio exterior</button>
+    <button class="tab" onclick="sw('cal',this)">Calendario macro</button>
+    <button class="tab" onclick="sw('rat',this)">Calificadoras</button>
+    <button class="tab" onclick="sw('news',this)">Noticias</button>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ===== ÍNDICES HISTÓRICOS ===== -->
+<div id="p-idx" class="panel on">
+  <div class="sl">Wall Street y mercados globales</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Dow Jones</div><div class="kv" id="v-dji">41,218</div><div class="kc up" id="c-dji">▲ +312 +0.76%</div></div>
+    <div class="kpi"><div class="kl">Nasdaq 100</div><div class="kv" id="v-ndq">17,844</div><div class="kc dn" id="c-ndq">▼ -89 -0.50%</div></div>
+    <div class="kpi"><div class="kl">S&amp;P 500</div><div class="kv" id="v-sp5">5,614</div><div class="kc up" id="c-sp5">▲ +24 +0.43%</div></div>
+    <div class="kpi"><div class="kl">VIX (Volatilidad)</div><div class="kv">18.42</div><div class="kc dn">▼ -1.20 -6.1%</div></div>
+  </div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">FTSE 100 (UK)</div><div class="kv">8,521</div><div class="kc up">▲ +0.53%</div></div>
+    <div class="kpi"><div class="kl">DAX 40 (Alemania)</div><div class="kv">22,340</div><div class="kc up">▲ +0.85%</div></div>
+    <div class="kpi"><div class="kl">Nikkei 225 (Japón)</div><div class="kv">34,527</div><div class="kc dn">▼ -0.90%</div></div>
+    <div class="kpi"><div class="kl">Shanghai (China)</div><div class="kv">3,289</div><div class="kc up">▲ +0.55%</div></div>
+  </div>
+
+  <div class="sl">Gráfico histórico — elige índice y período</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text2)">Índice:</span>
+      <button class="rbtn on" onclick="selIdx('sp500',this)">S&amp;P 500</button>
+      <button class="rbtn" onclick="selIdx('dji',this)">Dow Jones</button>
+      <button class="rbtn" onclick="selIdx('ndq',this)">Nasdaq</button>
+      <button class="rbtn" onclick="selIdx('dax',this)">DAX</button>
+      <button class="rbtn" onclick="selIdx('nk',this)">Nikkei</button>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center">
+      <span style="font-size:11px;color:var(--text2)">Período:</span>
+      <button class="rbtn" onclick="selRng(1,this)">1m</button>
+      <button class="rbtn" onclick="selRng(3,this)">3m</button>
+      <button class="rbtn" onclick="selRng(6,this)">6m</button>
+      <button class="rbtn on" onclick="selRng(12,this)">1a</button>
+      <button class="rbtn" onclick="selRng(36,this)">3a</button>
+      <button class="rbtn" onclick="selRng(60,this)">5a</button>
+    </div>
+  </div>
+  <div class="leg"><span id="leg-idx"><span class="lsq" style="background:#1d4ed8"></span>S&amp;P 500</span></div>
+  <div class="chw h200"><canvas id="chHist" role="img" aria-label="Gráfico histórico del índice seleccionado">Histórico índice bursátil.</canvas></div>
+
+  <div class="sl">Variación % 30 días — índices mundiales</div>
+  <div class="chw h160"><canvas id="chComp" role="img" aria-label="Variación 30d índices mundiales">Variación 30d.</canvas></div>
+</div>
+
+<!-- ===== BVG · BVQ · BONOS ECUADOR ===== -->
+<div id="p-ecu" class="panel">
+  <div class="alert alert-amber">
+    BVG y BVQ no disponen de API pública en tiempo real. Los precios de acciones se actualizan diariamente desde bolsadevaloresguayaquil.com y bolsadequito.com. Los bonos soberanos globales (eurobonos) sí cotizan en mercado secundario internacional y se pueden obtener vía Bloomberg / EMMA.
+  </div>
+
+  <div class="sl">Mercado de valores Ecuador — indicadores clave 2025</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Volumen negociado (a sep. 2025)</div><div class="kv">$13,455M</div><div class="kc up">▲ +16.6% interanual</div></div>
+    <div class="kpi"><div class="kl">Meta anual 2025</div><div class="kv">$18,000M</div><div class="kc nt">Récord histórico proyectado</div></div>
+    <div class="kpi"><div class="kl">Participación sector público</div><div class="kv">60%</div><div class="kc nt">Del total negociado</div></div>
+    <div class="kpi"><div class="kl">Bonos temáticos acumulados</div><div class="kv">$926M</div><div class="kc up">▲ Desde 2019</div></div>
+  </div>
+
+  <div class="sl">Bolsa de Valores de Guayaquil (BVG) — principales acciones renta variable</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Empresa</th><th>V. Nominal</th><th>Precio BVG</th><th>Sector</th><th>Mercado</th></tr></thead>
+    <tbody>
+      <tr><td>Corporación Favorita</td><td>$1.00</td><td><strong>$2.03</strong></td><td><span class="bdg bb">Retail</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Banco Pichincha</td><td>$1.00</td><td><strong>$1.65</strong></td><td><span class="bdg bb">Banca</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Banco Guayaquil</td><td>$1.00</td><td><strong>$1.57</strong></td><td><span class="bdg bb">Banca</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Holcim Ecuador</td><td>$1.00</td><td><strong>$1.30</strong></td><td><span class="bdg ba">Construcción</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Cervecería Nacional</td><td>$6,000.00</td><td><strong>$7,900</strong></td><td><span class="bdg ba">Bebidas</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Inversancarlos</td><td>$1.00</td><td><strong>$0.95</strong></td><td><span class="bdg ba">Inversión</span></td><td>BVG / Nacional</td></tr>
+      <tr><td>Instrumento RF referencial</td><td>$100.00</td><td><strong>$109.00</strong></td><td><span class="bdg bg">Renta fija</span></td><td>BVG / Nacional</td></tr>
+    </tbody></table>
+  </div>
+  <p style="font-size:10px;color:var(--text3);margin-bottom:12px">* Precios del trimestre móvil agosto–noviembre 2025. Fuente: BVG.</p>
+
+  <div class="sl">BVQ — mercado de bonos temáticos (verdes, azules, sociales)</div>
+  <div class="g3">
+    <div class="kpi"><div class="kl">Bonos temáticos BVQ</div><div class="kv">$431M</div><div class="kc up">▲ Acumulado 2019–2023</div></div>
+    <div class="kpi"><div class="kl">Bonos temáticos BVG</div><div class="kv">$48.25M</div><div class="kc up">▲ Acumulado 2019–2023</div></div>
+    <div class="kpi"><div class="kl">ETF negociados (nuevo)</div><div class="kv">$55M</div><div class="kc nt">Producto en expansión</div></div>
+  </div>
+
+  <div class="sl">Instrumentos del sector público negociados en BVG y BVQ</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Instrumento</th><th>Emisor</th><th>Bolsa</th><th>Plazo</th><th>Participantes</th></tr></thead>
+    <tbody>
+      <tr><td>Bonos del Estado (largo plazo)</td><td>MEF Ecuador</td><td>BVQ / BVG</td><td>5–30 años</td><td>Inversionistas institucionales</td></tr>
+      <tr><td>Certificados de Depósito Estado</td><td>MEF Ecuador</td><td>BVQ / BVG</td><td>Corto/mediano</td><td>General</td></tr>
+      <tr><td>Notas de Crédito SRI</td><td>SRI</td><td>BVG</td><td>Corto plazo</td><td>Proveedores del Estado</td></tr>
+      <tr><td>Bonos jubilación IESS</td><td>IESS / Estado</td><td>BVQ / BVG</td><td>Largo plazo</td><td>Funcionarios públicos</td></tr>
+      <tr><td>Bonos verdes / azules / sociales</td><td>Privados + Estado</td><td>BVQ (lidera)</td><td>5–20 años</td><td>Inversión sostenible</td></tr>
+      <tr><td>ETF (fondos cotizados)</td><td>Varios</td><td>BVQ / BVG</td><td>Abierto</td><td>Minoristas e institucionales</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="sl">Eurobonos soberanos Ecuador — mercado internacional</div>
+  <div class="alert alert-blue">
+    En enero 2026 Ecuador regresó a mercados internacionales tras 7 años con una emisión histórica de $4,000M en eurobonos (sobresuscripción 4.5x, demanda de $18,000M). Recompró bonos 2030 y 2035 (tasa 6.9%), emitiendo nuevos: Bono 2034 por $2,200M al 8.75% y Bono 2039 por $1,800M al 9.25%.
+  </div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Bono</th><th>Monto</th><th>Tasa cupón</th><th>Vencimiento</th><th>Precio aprox.</th><th>Rendimiento</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Global Ecuador 2034</td><td>$2,200M</td><td>8.75%</td><td>2034</td><td>~$97.5</td><td>~9.1%</td><td><span class="bdg bg">Activo — ene 2026</span></td></tr>
+      <tr><td>Global Ecuador 2039</td><td>$1,800M</td><td>9.25%</td><td>2039</td><td>~$96.8</td><td>~9.6%</td><td><span class="bdg bg">Activo — ene 2026</span></td></tr>
+      <tr><td>Global Ecuador 2040</td><td>—</td><td>5.50%</td><td>2040</td><td>~$84.0</td><td>~7.4%</td><td><span class="bdg bb">En circulación</span></td></tr>
+      <tr><td>Global Ecuador 2030</td><td>—</td><td>6.90%</td><td>2030</td><td>Retirado</td><td>—</td><td><span class="bdg ba">Recomprado ene 2026</span></td></tr>
+      <tr><td>Global Ecuador 2035</td><td>—</td><td>6.90%</td><td>2035</td><td>Retirado</td><td>—</td><td><span class="bdg ba">Recomprado ene 2026</span></td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="sl">Evolución precio bonos Ecuador — mercado secundario</div>
+  <div class="leg">
+    <span><span class="lsq" style="background:#1d4ed8"></span>Global 2034 (nuevo)</span>
+    <span><span class="lsq" style="background:#16a34a"></span>Global 2039 (nuevo)</span>
+    <span><span class="lsq" style="background:#dc2626"></span>Global 2040</span>
+  </div>
+  <div class="chw h180"><canvas id="chBonEcu" role="img" aria-label="Precio bonos soberanos Ecuador mercado secundario">Bonos Ecuador precio.</canvas></div>
+
+  <div style="margin-top:10px">
+    <a href="https://www.bolsadevaloresguayaquil.com" target="_blank" style="font-size:11px;color:var(--accent);margin-right:16px">BVG — bolsadevaloresguayaquil.com ↗</a>
+    <a href="https://www.bolsadequito.com" target="_blank" style="font-size:11px;color:var(--accent)">BVQ — bolsadequito.com ↗</a>
+  </div>
+</div>
+
+<!-- ===== LATAM ===== -->
+<div id="p-latam" class="panel">
+  <div class="sl">Bolsas latinoamericanas</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">BVL Lima (Perú)</div><div class="kv">23,841</div><div class="kc up">▲ +1.22%</div></div>
+    <div class="kpi"><div class="kl">Colcap (Colombia)</div><div class="kv">1,842</div><div class="kc dn">▼ -0.97%</div></div>
+    <div class="kpi"><div class="kl">Merval (Argentina)</div><div class="kv">2,184K</div><div class="kc up">▲ +2.4%</div></div>
+    <div class="kpi"><div class="kl">BVQ / BVG (Ecuador)</div><div class="kv">$13,455M</div><div class="kc nt">Vol. anual negociado</div></div>
+  </div>
+  <div class="sl">Indicadores macroeconómicos — Ecuador, Perú, Colombia, Argentina</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>País</th><th>Moneda</th><th>Inflación</th><th>PIB a/a</th><th>Desempleo</th><th>Tipo cambio</th><th>Reservas</th><th>Outlook</th></tr></thead>
+    <tbody>
+      <tr><td>Ecuador</td><td>USD (dolarizado)</td><td>2.1%</td><td>+2.4%</td><td>3.8%</td><td>— USD</td><td>$4.2B</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Perú</td><td>Sol (PEN)</td><td>2.9%</td><td>+3.1%</td><td>6.4%</td><td>3.72</td><td>$74.1B</td><td><span class="bdg bg">Positivo</span></td></tr>
+      <tr><td>Colombia</td><td>Peso (COP)</td><td>5.1%</td><td>+1.8%</td><td>9.7%</td><td>4,182</td><td>$61.3B</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Argentina</td><td>Peso (ARS)</td><td>54.0%</td><td>+5.4%</td><td>6.9%</td><td>1,064</td><td>$28.7B</td><td><span class="bdg br">Cauto</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="sl">Tasas de referencia — bancos centrales LATAM</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Ecuador (Fed Rate)</div><div class="kv">4.25–4.50%</div><div class="kc nt">Dolarizado</div></div>
+    <div class="kpi"><div class="kl">BCRP (Perú)</div><div class="kv">4.75%</div><div class="kc dn">▼ -25pb ene 2025</div></div>
+    <div class="kpi"><div class="kl">Banrep (Colombia)</div><div class="kv">9.25%</div><div class="kc dn">▼ -50pb feb 2025</div></div>
+    <div class="kpi"><div class="kl">BCRA (Argentina)</div><div class="kv">29.0%</div><div class="kc dn">▼ Ciclo baja</div></div>
+  </div>
+  <div class="sl">Exportaciones clave por país</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>País</th><th>Exportación #1</th><th>Exportación #2</th><th>Exportación #3</th></tr></thead>
+    <tbody>
+      <tr><td>Ecuador</td><td>Petróleo crudo</td><td>Camarón</td><td>Banano</td></tr>
+      <tr><td>Perú</td><td>Cobre</td><td>Oro</td><td>Zinc</td></tr>
+      <tr><td>Colombia</td><td>Petróleo</td><td>Café</td><td>Carbón</td></tr>
+      <tr><td>Argentina</td><td>Soya y derivados</td><td>Maíz</td><td>Vehículos</td></tr>
+    </tbody></table>
+  </div>
+</div>
+
+<!-- ===== RIESGO PAÍS ===== -->
+<div id="p-rp" class="panel">
+  <div class="ecu-note">EMBI+ JP Morgan — diferencial en puntos básicos (pb) sobre bonos del Tesoro EEUU. Verde &lt;200pb · Amarillo 200–500pb · Rojo &gt;500pb</div>
+  <div class="sl">LATAM — EMBI+ actual</div>
+  <div id="rp-latam"></div>
+  <div class="sl">Comparativa global</div>
+  <div id="rp-global"></div>
+  <div class="sl">Evolución histórica EMBI+ — 12 meses</div>
+  <div class="leg">
+    <span><span class="lsq" style="background:#1d4ed8"></span>Ecuador</span>
+    <span><span class="lsq" style="background:#16a34a"></span>Perú</span>
+    <span><span class="lsq" style="background:#d97706"></span>Colombia</span>
+    <span><span class="lsq" style="background:#dc2626"></span>Argentina</span>
+  </div>
+  <div class="chw h200"><canvas id="chRP" role="img" aria-label="Evolución EMBI+ Ecuador Perú Colombia Argentina">Riesgo país histórico.</canvas></div>
+</div>
+
+<!-- ===== ANÁLISIS TÉCNICO ===== -->
+<div id="p-tech" class="panel">
+  <div class="sl">Selecciona activo</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    <button class="rbtn on" onclick="selTech('SP500',this)">S&amp;P 500</button>
+    <button class="rbtn" onclick="selTech('BTC',this)">Bitcoin</button>
+    <button class="rbtn" onclick="selTech('ORO',this)">Oro</button>
+    <button class="rbtn" onclick="selTech('WTI',this)">Petróleo WTI</button>
+    <button class="rbtn" onclick="selTech('ECU',this)">Bono Ecuador</button>
+  </div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Precio actual</div><div class="kv" id="tech-price">5,614</div><div class="kc" id="tech-trend">▲ Tendencia alcista</div></div>
+    <div class="kpi"><div class="kl">RSI (14 períodos)</div><div class="kv" id="tech-rsi">58.3</div><div class="kc nt" id="tech-rsi-sig">Zona neutral</div></div>
+    <div class="kpi"><div class="kl">MACD</div><div class="kv" id="tech-macd">+12.4</div><div class="kc up" id="tech-macd-sig">Señal alcista</div></div>
+    <div class="kpi"><div class="kl">Señal global</div><div class="kv"><span class="signal sig-buy" id="tech-signal">COMPRA</span></div></div>
+  </div>
+  <div class="sl">Medias móviles y niveles clave — <span id="tech-name">S&amp;P 500</span></div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Indicador</th><th>Valor</th><th>Precio vs MA</th><th>Señal</th><th>Fuerza</th></tr></thead>
+    <tbody id="tech-ma-tbl">
+      <tr><td>MA 20 días</td><td>5,520</td><td class="up">+1.7% sobre</td><td><span class="bdg bg">Alcista</span></td><td>Media</td></tr>
+      <tr><td>MA 50 días</td><td>5,410</td><td class="up">+3.8% sobre</td><td><span class="bdg bg">Alcista</span></td><td>Fuerte</td></tr>
+      <tr><td>MA 200 días</td><td>5,120</td><td class="up">+9.7% sobre</td><td><span class="bdg bg">Alcista</span></td><td>Muy fuerte</td></tr>
+      <tr><td>Soporte clave</td><td>5,400</td><td class="nt">Zona soporte</td><td><span class="bdg ba">Vigilar</span></td><td>—</td></tr>
+      <tr><td>Resistencia</td><td>5,800</td><td class="nt">Zona objetivo</td><td><span class="bdg ba">Objetivo</span></td><td>—</td></tr>
+    </tbody></table>
+  </div>
+  <div class="leg">
+    <span><span class="lsq" style="background:#1d4ed8"></span>Precio</span>
+    <span><span class="lsq" style="background:#d97706"></span>MA 20</span>
+    <span><span class="lsq" style="background:#16a34a"></span>MA 50</span>
+  </div>
+  <div class="chw h180"><canvas id="chTech" role="img" aria-label="Precio con medias móviles MA20 y MA50">Análisis técnico.</canvas></div>
+  <div class="sl">RSI — sobrecompra &gt;70 · zona neutral 30–70 · sobreventa &lt;30</div>
+  <div class="chw h120"><canvas id="chRSI" role="img" aria-label="RSI 14 períodos">RSI 14.</canvas></div>
+</div>
+
+<!-- ===== SIMULADOR PORTAFOLIO ===== -->
+<div id="p-port" class="panel">
+  <div class="sl">Configura los pesos de tu portafolio (%)</div>
+  <div id="port-sliders"></div>
+  <div class="port-summary">
+    <div class="port-item"><div class="port-v" id="pr-ret">—</div><div class="port-l">Retorno esperado (1a)</div></div>
+    <div class="port-item"><div class="port-v" id="pr-vol">—</div><div class="port-l">Volatilidad anual</div></div>
+    <div class="port-item"><div class="port-v" id="pr-sh">—</div><div class="port-l">Sharpe Ratio</div></div>
+    <div class="port-item"><div class="port-v" id="pr-tot">100%</div><div class="port-l">Total asignado</div></div>
+  </div>
+  <div class="sl">Distribución y proyección $10,000 a 5 años</div>
+  <div class="g2">
+    <div class="chw h180"><canvas id="chPortD" role="img" aria-label="Distribución portafolio">Distribución.</canvas></div>
+    <div class="chw h180"><canvas id="chPortG" role="img" aria-label="Proyección crecimiento portafolio">Proyección 5 años.</canvas></div>
+  </div>
+</div>
+
+<!-- ===== MACRO Y BANCOS ===== -->
+<div id="p-macro" class="panel">
+  <div class="sl">Tasas de referencia — bancos centrales</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Fed (EEUU)</div><div class="kv">4.25–4.50%</div><div class="kc nt">Sin cambio may 2025</div></div>
+    <div class="kpi"><div class="kl">BCE (Eurozona)</div><div class="kv">2.65%</div><div class="kc dn">▼ -25pb mar 2025</div></div>
+    <div class="kpi"><div class="kl">BoE (UK)</div><div class="kv">4.50%</div><div class="kc nt">Sin cambio</div></div>
+    <div class="kpi"><div class="kl">BoJ (Japón)</div><div class="kv">0.50%</div><div class="kc up">▲ +25pb ene 2025</div></div>
+  </div>
+  <div class="sl">Indicadores globales + LATAM</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>País</th><th>Inflación</th><th>PIB a/a</th><th>Desempleo</th><th>Deuda/PIB</th><th>Bono 10Y</th><th>Outlook</th></tr></thead>
+    <tbody>
+      <tr><td>Estados Unidos</td><td>2.4%</td><td>+2.3%</td><td>4.2%</td><td>122%</td><td>4.32%</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Eurozona</td><td>2.2%</td><td>+1.1%</td><td>6.1%</td><td>88%</td><td>2.51%</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Ecuador</td><td>2.1%</td><td>+2.4%</td><td>3.8%</td><td>58%</td><td>10.2%*</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Perú</td><td>2.9%</td><td>+3.1%</td><td>6.4%</td><td>32%</td><td>6.8%</td><td><span class="bdg bg">Positivo</span></td></tr>
+      <tr><td>Colombia</td><td>5.1%</td><td>+1.8%</td><td>9.7%</td><td>55%</td><td>11.4%</td><td><span class="bdg ba">Neutro</span></td></tr>
+      <tr><td>Argentina</td><td>54.0%</td><td>+5.4%</td><td>6.9%</td><td>89%</td><td>N/D</td><td><span class="bdg br">Cauto</span></td></tr>
+      <tr><td>China</td><td>0.1%</td><td>+5.3%</td><td>5.1%</td><td>51%</td><td>1.74%</td><td><span class="bdg bg">Positivo</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="chw h160"><canvas id="chBonos" role="img" aria-label="Rendimiento bonos soberanos 10 años">Bonos 10Y.</canvas></div>
+</div>
+
+<!-- ===== COMMODITIES ===== -->
+<div id="p-comm" class="panel">
+  <div class="g4">
+    <div class="kpi"><div class="kl">WTI (Petróleo)</div><div class="kv">$78.42</div><div class="kc up">▲ +1.45%</div></div>
+    <div class="kpi"><div class="kl">Brent</div><div class="kv">$82.17</div><div class="kc up">▲ +1.21%</div></div>
+    <div class="kpi"><div class="kl">Oro (oz)</div><div class="kv">$3,241</div><div class="kc up">▲ +0.56%</div></div>
+    <div class="kpi"><div class="kl">Plata (oz)</div><div class="kv">$32.74</div><div class="kc up">▲ +1.36%</div></div>
+  </div>
+  <div class="sl">Commodities clave para economías LATAM</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Commodity</th><th>Precio</th><th>Var. día</th><th>Var. 30d</th><th>Relevante para</th></tr></thead>
+    <tbody>
+      <tr><td>Petróleo WTI</td><td>$78.42/bbl</td><td class="up">+1.45%</td><td class="up">+4.2%</td><td>Ecuador · Colombia</td></tr>
+      <tr><td>Cobre (lb)</td><td>$4.68</td><td class="up">+0.6%</td><td class="up">+8.3%</td><td>Perú (export. #1)</td></tr>
+      <tr><td>Oro (oz)</td><td>$3,241</td><td class="up">+0.56%</td><td class="up">+12.4%</td><td>Perú · Colombia</td></tr>
+      <tr><td>Soya (bu)</td><td>$10.81</td><td class="up">+0.3%</td><td class="dn">-2.1%</td><td>Argentina (export. #1)</td></tr>
+      <tr><td>Banano (kg)</td><td>$1.02</td><td class="nt">+0.1%</td><td class="up">+3.4%</td><td>Ecuador</td></tr>
+      <tr><td>Café (lb)</td><td>$2.847</td><td class="up">+0.4%</td><td class="up">+9.2%</td><td>Colombia</td></tr>
+      <tr><td>Gas Natural</td><td>$2.84</td><td class="dn">-3.07%</td><td class="dn">-8.1%</td><td>Global</td></tr>
+    </tbody></table>
+  </div>
+  <div class="chw h160"><canvas id="chComm" role="img" aria-label="Variación 30d commodities LATAM">Commodities 30d.</canvas></div>
+</div>
+
+<!-- ===== CRIPTO Y EXCHANGE ===== -->
+<div id="p-cripto" class="panel">
+  <div class="sl">Criptomonedas principales</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Bitcoin (BTC)</div><div class="kv" id="v-btc">$94,210</div><div class="kc up" id="c-btc">▲ +2.4% (24h)</div></div>
+    <div class="kpi"><div class="kl">Ethereum (ETH)</div><div class="kv" id="v-eth">$1,814</div><div class="kc dn" id="c-eth">▼ -1.2% (24h)</div></div>
+    <div class="kpi"><div class="kl">Market Cap total</div><div class="kv">$3.04T</div><div class="kc up">▲ +1.8%</div></div>
+    <div class="kpi"><div class="kl">Fear &amp; Greed</div><div class="kv">67 — Greed</div><div class="kc nt">Neutral ayer</div></div>
+  </div>
+  <div class="sl">Tipos de cambio — LATAM y principales divisas vs USD</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">USD (Ecuador)</div><div class="kv">1.0000</div><div class="kc nt">Dolarizado</div></div>
+    <div class="kpi"><div class="kl">USD/PEN (Perú)</div><div class="kv" id="v-pen">3.7210</div><div class="kc dn">▼ -0.14%</div></div>
+    <div class="kpi"><div class="kl">USD/COP (Colombia)</div><div class="kv" id="v-cop">4,182</div><div class="kc dn">▼ -0.22%</div></div>
+    <div class="kpi"><div class="kl">USD/ARS (Argentina)</div><div class="kv">1,064</div><div class="kc dn">▼ -0.91%</div></div>
+  </div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">EUR/USD</div><div class="kv" id="v-eur">1.0842</div><div class="kc up">▲ +0.19%</div></div>
+    <div class="kpi"><div class="kl">GBP/USD</div><div class="kv" id="v-gbp">1.2731</div><div class="kc dn">▼ -0.14%</div></div>
+    <div class="kpi"><div class="kl">USD/BRL</div><div class="kv" id="v-brl">5.744</div><div class="kc dn">▼ -0.31%</div></div>
+    <div class="kpi"><div class="kl">DXY (índice USD)</div><div class="kv">104.21</div><div class="kc dn">▼ -0.18%</div></div>
+  </div>
+  <p style="font-size:10px;color:var(--text3);margin-top:4px">* Para obtener tasas en tiempo real, agrega tu API key de ExchangeRate-API en la sección de configuración del código.</p>
+</div>
+
+<!-- ===== COMERCIO EXTERIOR ===== -->
+<div id="p-trade" class="panel">
+  <div class="g3">
+    <div class="kpi"><div class="kl">Baltic Dry Index</div><div class="kv">1,482</div><div class="kc up">▲ +2.3%</div></div>
+    <div class="kpi"><div class="kl">Freightos FBX Global</div><div class="kv">$2,841</div><div class="kc dn">▼ -1.8%</div></div>
+    <div class="kpi"><div class="kl">PMI Global Manufactura</div><div class="kv">50.3</div><div class="kc up">▲ Expansión</div></div>
+  </div>
+  <div class="sl">Rutas clave para Ecuador, Perú, Colombia y Argentina</div>
+  <div class="tc">
+    <table>
+    <thead><tr><th>Ruta</th><th>USD / 40ft</th><th>Var. 7d</th><th>Var. 30d</th><th>País</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Asia → Guayaquil</td><td>$4,920</td><td class="up">+5.2%</td><td class="up">+11.4%</td><td>Ecuador</td><td><span class="bdg br">Alto</span></td></tr>
+      <tr><td>Asia → Callao (Lima)</td><td>$4,310</td><td class="up">+3.1%</td><td class="up">+8.2%</td><td>Perú</td><td><span class="bdg br">Alto</span></td></tr>
+      <tr><td>Asia → Cartagena</td><td>$3,840</td><td class="up">+2.4%</td><td class="up">+6.7%</td><td>Colombia</td><td><span class="bdg ba">Moderado</span></td></tr>
+      <tr><td>Asia → Buenos Aires</td><td>$4,650</td><td class="up">+4.8%</td><td class="up">+9.2%</td><td>Argentina</td><td><span class="bdg br">Alto</span></td></tr>
+      <tr><td>EEUU East → LATAM</td><td>$1,840</td><td class="dn">-1.2%</td><td class="dn">-2.8%</td><td>Regional</td><td><span class="bdg bg">Bajo</span></td></tr>
+      <tr><td>Rotterdam → LATAM</td><td>$2,980</td><td class="nt">+0.2%</td><td class="up">+3.1%</td><td>Regional</td><td><span class="bdg ba">Moderado</span></td></tr>
+    </tbody></table>
+  </div>
+  <div class="sl">Aranceles EEUU — impacto en países LATAM</div>
+  <div class="g4">
+    <div class="kpi"><div class="kl">Arancel promedio EEUU</div><div class="kv">17.4%</div><div class="kc dn">▲ +8pp vs 2024</div></div>
+    <div class="kpi"><div class="kl">Ecuador (TLC vigente)</div><div class="kv">0–5%</div><div class="kc up">Preferencial</div></div>
+    <div class="kpi"><div class="kl">Colombia (TLC vigente)</div><div class="kv">0–5%</div><div class="kc up">Preferencial</div></div>
+    <div class="kpi"><div class="kl">Argentina (sin TLC)</div><div class="kv">10–25%</div><div class="kc dn">General</div></div>
+  </div>
+</div>
+
+<!-- ===== CALENDARIO MACRO ===== -->
+<div id="p-cal" class="panel">
+  <div class="sl">Eventos macroeconómicos — mayo 2025</div>
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:6px 14px;margin-bottom:12px">
+    <div class="calitem"><div class="caldate">Lun 5 may</div><div><div class="calevt">PMI Servicios EEUU — ISM (abril)</div><div class="calimp"><span class="bdg br">Alto impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">Mar 6 may</div><div><div class="calevt">Balanza comercial EEUU (marzo)</div><div class="calimp"><span class="bdg ba">Medio impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">Mié 7 may</div><div><div class="calevt">Decisión tasas Banco de Inglaterra (BoE)</div><div class="calimp"><span class="bdg br">Alto impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">Jue 8 may</div><div><div class="calevt">Solicitudes desempleo EEUU semanales</div><div class="calimp"><span class="bdg ba">Medio impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">Jue 8 may</div><div><div class="calevt">IPC Colombia (abril) — Banrep</div><div class="calimp"><span class="bdg ba">Medio — LATAM</span></div></div></div>
+    <div class="calitem"><div class="caldate">Vie 9 may</div><div><div class="calevt">NFP — Nóminas no agrícolas EEUU (abril)</div><div class="calimp"><span class="bdg br">Máximo impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">Vie 9 may</div><div><div class="calevt">PIB Perú Q1 2025</div><div class="calimp"><span class="bdg ba">Medio — LATAM</span></div></div></div>
+    <div class="calitem"><div class="caldate">13 may</div><div><div class="calevt">IPC EEUU (abril) — dato inflación clave</div><div class="calimp"><span class="bdg br">Máximo impacto</span></div></div></div>
+    <div class="calitem"><div class="caldate">14 may</div><div><div class="calevt">IPC Ecuador (abril) — BCE Ecuador</div><div class="calimp"><span class="bdg ba">Medio — Ecuador</span></div></div></div>
+    <div class="calitem"><div class="caldate">22 may</div><div><div class="calevt">Decisión tasas Banrep Colombia</div><div class="calimp"><span class="bdg br">Alto — LATAM</span></div></div></div>
+    <div class="calitem"><div class="caldate">28 may</div><div><div class="calevt">PIB Colombia Q1 2025</div><div class="calimp"><span class="bdg ba">Medio — LATAM</span></div></div></div>
+    <div class="calitem"><div class="caldate">Jun — TBD</div><div><div class="calevt">Reunión FOMC — posible recorte Fed</div><div class="calimp"><span class="bdg br">Máximo impacto global</span></div></div></div>
+  </div>
+</div>
+
+<!-- ===== CALIFICADORAS ===== -->
+<div id="p-rat" class="panel">
+  <div class="sl">Calificación deuda soberana — Moody's · S&amp;P · Fitch</div>
+  <div class="tc">
+    <div class="ratrow" style="background:var(--bg2)"><div class="ratc" style="font-weight:600">País</div><div class="ratag" style="font-weight:600;font-size:10px">Agencia</div><div style="width:55px;flex-shrink:0;font-size:10px;font-weight:600;color:var(--text2)">Rating</div><div class="ratdesc" style="font-weight:600;font-size:10px;color:var(--text2)">Perspectiva y notas</div></div>
+    <div class="ratrow"><div class="ratc">Ecuador</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg br">Caa3</span></div><div class="ratdesc">Altamente especulativo — watch positivo 2025</div></div>
+    <div class="ratrow"><div class="ratc">Ecuador</div><div class="ratag">S&amp;P</div><div style="width:55px;flex-shrink:0"><span class="bdg br">B-</span></div><div class="ratdesc">Especulativo — perspectiva estable. Mejora fiscal post-FMI</div></div>
+    <div class="ratrow"><div class="ratc">Ecuador</div><div class="ratag">Fitch</div><div style="width:55px;flex-shrink:0"><span class="bdg br">B-</span></div><div class="ratdesc">Especulativo — perspectiva positiva</div></div>
+    <div class="ratrow"><div class="ratc">Perú</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">Baa1</span></div><div class="ratdesc">Grado inversión — perspectiva estable</div></div>
+    <div class="ratrow"><div class="ratc">Perú</div><div class="ratag">S&amp;P</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">BBB</span></div><div class="ratdesc">Grado inversión — perspectiva negativa por riesgo político</div></div>
+    <div class="ratrow"><div class="ratc">Colombia</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">Baa2</span></div><div class="ratdesc">Grado inversión — perspectiva estable</div></div>
+    <div class="ratrow"><div class="ratc">Colombia</div><div class="ratag">S&amp;P</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">BB+</span></div><div class="ratdesc">Debajo de grado inversión — perspectiva estable</div></div>
+    <div class="ratrow"><div class="ratc">Argentina</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg br">Ca</span></div><div class="ratdesc">Default parcial — recuperación económica Milei</div></div>
+    <div class="ratrow"><div class="ratc">Argentina</div><div class="ratag">S&amp;P</div><div style="width:55px;flex-shrink:0"><span class="bdg br">CCC+</span></div><div class="ratdesc">Altamente especulativo — mejora fiscal notable</div></div>
+    <div class="ratrow"><div class="ratc">EEUU</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">Aa1</span></div><div class="ratdesc">Rebajado may 2025 — perspectiva negativa por deuda</div></div>
+    <div class="ratrow"><div class="ratc">Alemania</div><div class="ratag">S&amp;P</div><div style="width:55px;flex-shrink:0"><span class="bdg bg">AAA</span></div><div class="ratdesc">Máxima calificación — perspectiva estable</div></div>
+    <div class="ratrow"><div class="ratc">China</div><div class="ratag">Moody's</div><div style="width:55px;flex-shrink:0"><span class="bdg ba">A1</span></div><div class="ratdesc">Grado inversión alto — perspectiva negativa</div></div>
+  </div>
+</div>
+
+<!-- ===== NOTICIAS ===== -->
+<div id="p-news" class="panel">
+  <div class="sl">Noticias financieras — actualización horaria</div>
+  <div id="news-container">
+    <div class="newsitem"><div class="nileft"><div class="nisrc">Reuters &nbsp;<span class="bdg bb">Fed</span></div><div class="nittl">Fed mantiene tasas sin cambio y señala cautela ante inflación persistente en servicios en EEUU</div><div class="nitm">Hace 42 min</div></div><div><span class="bdg ba">Macro</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">Bloomberg &nbsp;<span class="bdg bg">Oro</span></div><div class="nittl">Oro supera $3,200 por tercer día consecutivo impulsado por demanda asiática y debilidad del dólar</div><div class="nitm">Hace 1h 20min</div></div><div><span class="bdg bg">Commodities</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">El Comercio &nbsp;<span class="bdg bb">Ecuador</span></div><div class="nittl">Ecuador recibe perspectiva positiva de S&P tras acuerdo con FMI y mejora en balanza fiscal 2025</div><div class="nitm">Hace 2h</div></div><div><span class="bdg bb">ECU</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">La República &nbsp;<span class="bdg bg">Perú</span></div><div class="nittl">BVL sube 1.2% liderada por mineras tras alza del cobre a máximos de 2025</div><div class="nitm">Hace 3h</div></div><div><span class="bdg bg">PER</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">Portafolio &nbsp;<span class="bdg ba">Colombia</span></div><div class="nittl">Banrep mantiene expectativa de recorte en junio; inflación cede a 5.1% en abril 2025</div><div class="nitm">Hace 4h</div></div><div><span class="bdg bb">COL</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">Infobae &nbsp;<span class="bdg br">Argentina</span></div><div class="nittl">Merval supera 2.1M puntos; Milei anuncia eliminación del cepo cambiario para exportadores</div><div class="nitm">Hace 5h</div></div><div><span class="bdg br">ARG</span></div></div>
+    <div class="newsitem"><div class="nileft"><div class="nisrc">FT &nbsp;<span class="bdg br">Trade</span></div><div class="nittl">China restringe exportaciones de tierras raras; fletes Asia-LATAM suben 9% en el mes</div><div class="nitm">Hace 6h</div></div><div><span class="bdg br">Global</span></div></div>
+  </div>
+  <p style="font-size:10px;color:var(--text3);margin-top:8px">Para noticias en tiempo real, conecta NewsAPI (newsapi.org — gratis hasta 100 req/día) en el código fuente.</p>
+</div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  <div class="footer-apis">
+    Fuentes:
+    <span class="chip">Yahoo Finance</span>
+    <span class="chip">CoinGecko API</span>
+    <span class="chip">ExchangeRate-API</span>
+    <span class="chip">FRED (Fed)</span>
+    <span class="chip">EMBI+ JP Morgan</span>
+    <span class="chip">BVG</span>
+    <span class="chip">BVQ</span>
+    <span class="chip">Freightos</span>
+    <span class="chip">Moody's / S&P / Fitch</span>
+  </div>
+  <div style="font-size:10px;color:var(--text3)">Actualizado: <span id="tsdisp">--</span></div>
+</div>
+<div class="pbar"><div class="pbar-fill" id="pfill" style="width:100%"></div></div>
+
+<script>
+// ============ HELPERS ============
+const isDark = matchMedia('(prefers-color-scheme:dark)').matches;
+const gc = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+const tc = isDark ? '#9ca3af' : '#6b7280';
+const BASE = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: gc }, ticks: { color: tc, font: { size: 10 }, maxTicksLimit: 10 } },
+    y: { grid: { color: gc }, ticks: { color: tc, font: { size: 10 } } }
+  }
+};
+
+function sw(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  el.classList.add('on');
+}
+
+// ============ COUNTDOWN ============
+let secs = 3600;
+function tick() {
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  document.getElementById('cd').textContent = m + ':' + s;
+  document.getElementById('pfill').style.width = (secs / 3600 * 100).toFixed(1) + '%';
+  secs <= 0 ? (secs = 3600, updateTs()) : secs--;
+}
+function updateTs() {
+  const n = new Date();
+  document.getElementById('tsdisp').textContent = n.toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+updateTs();
+tick();
+setInterval(tick, 1000);
+
+// ============ API: COINGECKO (cripto) ============
+async function loadCripto() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+    const d = await r.json();
+    if (d.bitcoin) {
+      document.getElementById('v-btc').textContent = '$' + d.bitcoin.usd.toLocaleString();
+      const ch = d.bitcoin.usd_24h_change;
+      document.getElementById('c-btc').textContent = (ch >= 0 ? '▲ +' : '▼ ') + ch.toFixed(2) + '% (24h)';
+      document.getElementById('c-btc').className = 'kc ' + (ch >= 0 ? 'up' : 'dn');
+    }
+    if (d.ethereum) {
+      document.getElementById('v-eth').textContent = '$' + d.ethereum.usd.toLocaleString();
+      const ch = d.ethereum.usd_24h_change;
+      document.getElementById('c-eth').textContent = (ch >= 0 ? '▲ +' : '▼ ') + ch.toFixed(2) + '% (24h)';
+      document.getElementById('c-eth').className = 'kc ' + (ch >= 0 ? 'up' : 'dn');
+    }
+  } catch(e) { console.log('CoinGecko no disponible', e); }
+}
+
+// ============ API: EXCHANGERATE (divisas) ============
+// REEMPLAZA 'TU_API_KEY' con tu key gratuita de exchangerate-api.com
+const FX_KEY = 'TU_API_KEY';
+async function loadFX() {
+  if (FX_KEY === 'TU_API_KEY') return;
+  try {
+    const r = await fetch(`https://v6.exchangerate-api.com/v6/${FX_KEY}/latest/USD`);
+    const d = await r.json();
+    if (d.result === 'success') {
+      const rates = d.conversion_rates;
+      if (rates.PEN) document.getElementById('v-pen').textContent = rates.PEN.toFixed(4);
+      if (rates.COP) document.getElementById('v-cop').textContent = Math.round(rates.COP).toLocaleString();
+      if (rates.EUR) document.getElementById('v-eur').textContent = (1 / rates.EUR).toFixed(4);
+      if (rates.GBP) document.getElementById('v-gbp').textContent = (1 / rates.GBP).toFixed(4);
+      if (rates.BRL) document.getElementById('v-brl').textContent = rates.BRL.toFixed(3);
+    }
+  } catch(e) { console.log('ExchangeRate-API no disponible', e); }
+}
+
+// Ejecutar APIs al cargar y cada hora
+loadCripto();
+loadFX();
+setInterval(() => { loadCripto(); loadFX(); }, 3600000);
+
+// ============ ÍNDICES HISTÓRICOS ============
+const IDX = {
+  sp500: { label: 'S&P 500', color: '#1d4ed8', data: [4100,4180,4050,4300,4420,4380,4550,4700,4620,4800,4900,5000,5100,5220,5300,5150,5400,5480,5420,5550,5480,5600,5614] },
+  dji:   { label: 'Dow Jones', color: '#16a34a', data: [32500,33000,32800,34000,34800,34500,35500,36200,35900,37100,37900,38800,39500,40000,39700,40500,40900,41000,40800,41100,40900,41150,41218] },
+  ndq:   { label: 'Nasdaq 100', color: '#d97706', data: [14200,14800,14500,15500,16200,15900,16700,17300,17700,18100,18500,17800,18300,17900,17400,17600,17800,17700,17500,17650,17700,17800,17844] },
+  dax:   { label: 'DAX 40', color: '#7c3aed', data: [16500,16900,16700,17500,18000,18300,18900,19500,19600,20000,20600,21000,21400,21900,21500,21900,22100,22200,22100,22200,22250,22300,22340] },
+  nk:    { label: 'Nikkei 225', color: '#dc2626', data: [29500,31500,30500,32500,34000,33400,34700,36000,37200,38500,38800,37500,36000,34800,33500,34000,34200,34400,34100,34300,34400,34500,34527] }
+};
+const ALL_MONTHS = ['May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb','May'];
+let curIdx = 'sp500', curRng = 12, histChart = null;
+
+function buildHist() {
+  const d = IDX[curIdx];
+  const n = Math.min(curRng, d.data.length);
+  const vals = d.data.slice(-n);
+  const labs = ALL_MONTHS.slice(-n);
+  if (histChart) histChart.destroy();
+  histChart = new Chart(document.getElementById('chHist'), {
+    type: 'line',
+    data: { labels: labs, datasets: [{ label: d.label, data: vals, borderColor: d.color, backgroundColor: d.color + '18', tension: 0.35, fill: true, pointRadius: 2, pointBackgroundColor: d.color }] },
+    options: { ...BASE, plugins: { ...BASE.plugins, tooltip: { callbacks: { label: c => d.label + ': ' + c.parsed.y.toLocaleString() } } } }
+  });
+  document.getElementById('leg-idx').innerHTML = '<span class="lsq" style="background:' + d.color + '"></span>' + d.label;
+}
+
+function selIdx(k, el) {
+  document.querySelectorAll('#p-idx .rbtn').forEach(b => { if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('selIdx')) b.classList.remove('on'); });
+  el.classList.add('on'); curIdx = k; buildHist();
+}
+function selRng(m, el) {
+  document.querySelectorAll('#p-idx .rbtn').forEach(b => { if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('selRng')) b.classList.remove('on'); });
+  el.classList.add('on'); curRng = m; buildHist();
+}
+buildHist();
+
+// Variación 30d
+const comp30 = [0.43, -0.50, 0.85, -0.28, -0.90, 0.55, 0.49, -0.97, 2.40, 1.22];
+new Chart(document.getElementById('chComp'), {
+  type: 'bar',
+  data: { labels: ['S&P','Nasdaq','DAX','CAC','Nikkei','Shanghai','Bovespa','Colcap','Merval','BVL'], datasets: [{ label: '30d%', data: comp30, backgroundColor: comp30.map(v => v >= 0 ? 'rgba(22,163,74,0.75)' : 'rgba(220,38,38,0.75)') }] },
+  options: { ...BASE, scales: { ...BASE.scales, y: { ...BASE.scales.y, ticks: { ...BASE.scales.y.ticks, callback: v => v + '%' } } } }
+});
+
+// ============ BONOS ECUADOR ============
+const bonMeses = ['May 24','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene 25','Feb','Mar','Abr','May 25'];
+new Chart(document.getElementById('chBonEcu'), {
+  type: 'line',
+  data: { labels: bonMeses, datasets: [
+    { label: '2034', data: [null,null,null,null,null,null,null,null,98.5,97.8,97.2,97.6,97.5], borderColor: '#1d4ed8', tension: 0.3, fill: false, pointRadius: 3 },
+    { label: '2039', data: [null,null,null,null,null,null,null,null,97.2,96.5,96.0,96.4,96.8], borderColor: '#16a34a', tension: 0.3, fill: false, pointRadius: 3 },
+    { label: '2040', data: [69,71,74,78,80,82,81,83,84,83,83.5,84,84], borderColor: '#dc2626', tension: 0.3, fill: false, pointRadius: 3 }
+  ]},
+  options: { ...BASE, scales: { ...BASE.scales, y: { ...BASE.scales.y, ticks: { ...BASE.scales.y.ticks, callback: v => '$' + v } } } }
+});
+
+// ============ RIESGO PAÍS ============
+const RP_L = [{c:'Argentina',v:740,col:'#dc2626'},{c:'Ecuador',v:720,col:'#d97706'},{c:'Bolivia',v:482,col:'#dc2626'},{c:'Colombia',v:285,col:'#d97706'},{c:'México',v:192,col:'#16a34a'},{c:'Perú',v:148,col:'#16a34a'},{c:'Uruguay',v:85,col:'#16a34a'},{c:'Chile',v:78,col:'#16a34a'}];
+const RP_G = [{c:'Nigeria',v:395,col:'#dc2626'},{c:'Turquía',v:312,col:'#d97706'},{c:'Sudáfrica',v:228,col:'#d97706'},{c:'Indonesia',v:110,col:'#16a34a'},{c:'Filipinas',v:95,col:'#16a34a'},{c:'India',v:88,col:'#16a34a'}];
+function renderBars(data, id) {
+  const max = Math.max(...data.map(d => d.v));
+  document.getElementById(id).innerHTML = data.map(d =>
+    `<div class="rprow"><div class="rpnm">${d.c}</div><div class="rpbg"><div class="rpfill" style="width:${(d.v/max*100).toFixed(0)}%;background:${d.col}"></div></div><div class="rpval" style="color:${d.col}">${d.v} pb</div></div>`
+  ).join('');
+}
+renderBars(RP_L, 'rp-latam');
+renderBars(RP_G, 'rp-global');
+
+const rpMeses = ['May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May'];
+new Chart(document.getElementById('chRP'), {
+  type: 'line',
+  data: { labels: rpMeses, datasets: [
+    { label: 'Ecuador', data: [880,920,850,760,700,680,740,820,780,740,730,720,720], borderColor: '#1d4ed8', tension: 0.3, fill: false, pointRadius: 2 },
+    { label: 'Perú', data: [155,160,152,148,145,142,150,155,148,145,148,150,148], borderColor: '#16a34a', tension: 0.3, fill: false, pointRadius: 2 },
+    { label: 'Colombia', data: [310,305,295,288,280,275,290,300,292,285,282,285,285], borderColor: '#d97706', tension: 0.3, fill: false, pointRadius: 2 },
+    { label: 'Argentina', data: [1850,1600,1200,950,820,760,720,740,750,740,745,742,740], borderColor: '#dc2626', tension: 0.3, fill: false, pointRadius: 2 }
+  ]},
+  options: { ...BASE, scales: { ...BASE.scales, y: { ...BASE.scales.y, ticks: { ...BASE.scales.y.ticks, callback: v => v + ' pb' } } } }
+});
+
+// ============ ANÁLISIS TÉCNICO ============
+const TECH = {
+  SP500: { name:'S&P 500', price:'5,614', trend:'up', trendTxt:'▲ Tendencia alcista', rsi:58.3, rsiCls:'nt', rsiTxt:'Zona neutral', macd:'+12.4', macdCls:'up', macdTxt:'Señal alcista', sig:'COMPRA', sigCls:'sig-buy', prices:[5380,5420,5390,5460,5500,5480,5540,5570,5550,5590,5580,5600,5610,5600,5614], ma20:[5350,5380,5400,5420,5440,5450,5460,5470,5480,5490,5500,5510,5515,5518,5520], ma50:[5100,5120,5140,5160,5180,5200,5220,5240,5260,5280,5300,5330,5370,5390,5410], rsiArr:[45,52,48,55,60,57,62,65,63,64,61,62,60,59,58.3] },
+  BTC:   { name:'Bitcoin', price:'$94,210', trend:'up', trendTxt:'▲ Tendencia alcista', rsi:62.1, rsiCls:'up', rsiTxt:'Zona alcista', macd:'+840', macdCls:'up', macdTxt:'Señal alcista', sig:'COMPRA', sigCls:'sig-buy', prices:[72000,76000,74000,80000,86000,84000,89000,91000,90000,92000,91500,93000,94000,93500,94210], ma20:[70000,72000,74000,76000,78000,80000,82000,84000,86000,87000,88000,89000,90000,91000,92000], ma50:[65000,67000,69000,71000,73000,75000,77000,79000,81000,83000,84000,85000,86000,87000,88000], rsiArr:[52,58,54,62,68,65,70,72,69,68,65,64,63,62,62.1] },
+  ORO:   { name:'Oro XAU/USD', price:'$3,241', trend:'up', trendTxt:'▲ Tendencia alcista', rsi:71.2, rsiCls:'dn', rsiTxt:'Sobrecompra — cautela', macd:'+18.4', macdCls:'up', macdTxt:'Alcista pero extendido', sig:'NEUTRO', sigCls:'sig-hold', prices:[2600,2680,2720,2800,2850,2900,2950,3000,3050,3100,3120,3180,3200,3220,3241], ma20:[2550,2600,2650,2700,2750,2800,2840,2880,2920,2960,3000,3040,3080,3120,3150], ma50:[2400,2450,2500,2550,2600,2640,2680,2720,2760,2800,2840,2880,2920,2960,3000], rsiArr:[58,62,65,68,70,72,74,73,71,72,73,72,71,71,71.2] },
+  WTI:   { name:'Petróleo WTI', price:'$78.42', trend:'nt', trendTxt:'— Tendencia lateral', rsi:44.8, rsiCls:'nt', rsiTxt:'Zona neutral — débil', macd:'-1.2', macdCls:'dn', macdTxt:'Señal bajista', sig:'VENTA', sigCls:'sig-sell', prices:[85,83,80,78,76,74,72,70,72,74,76,78,79,78,78.42], ma20:[87,86,85,84,83,82,81,80,79,78,77,76,76.5,77,77], ma50:[90,89,88,87,86,85,84,83,82,81,80,79,78,77.5,77], rsiArr:[55,52,48,46,44,42,40,38,40,42,44,46,46,45,44.8] },
+  ECU:   { name:'Bono Ecuador 2039', price:'9.6%', trend:'dn', trendTxt:'▼ Rendimiento elevado', rsi:38.4, rsiCls:'dn', rsiTxt:'Zona débil — presión', macd:'-0.4', macdCls:'dn', macdTxt:'Señal bajista (precio bono)', sig:'CAUTELA', sigCls:'sig-sell', prices:[null,null,null,null,null,null,null,null,97.2,96.5,96.0,96.4,96.8,96.6,96.8], ma20:[null,null,null,null,null,null,null,null,97.8,97.5,97.2,97.0,96.9,96.8,96.7], ma50:[null,null,null,null,null,null,null,null,null,null,97.5,97.2,97.0,96.9,96.8], rsiArr:[null,null,null,null,null,null,null,null,55,50,45,42,40,39,38.4] }
+};
+let techChart = null, rsiChart = null;
+const techWeeks = ['S-14','S-13','S-12','S-11','S-10','S-9','S-8','S-7','S-6','S-5','S-4','S-3','S-2','S-1','Hoy'];
+
+function selTech(k, el) {
+  document.querySelectorAll('#p-tech .rbtn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  const d = TECH[k];
+  document.getElementById('tech-name').textContent = d.name;
+  document.getElementById('tech-price').textContent = d.price;
+  const tr = document.getElementById('tech-trend'); tr.textContent = d.trendTxt; tr.className = 'kc ' + d.trend;
+  document.getElementById('tech-rsi').textContent = d.rsi;
+  const rs = document.getElementById('tech-rsi-sig'); rs.textContent = d.rsiTxt; rs.className = 'kc ' + d.rsiCls;
+  document.getElementById('tech-macd').textContent = d.macd;
+  const ms = document.getElementById('tech-macd-sig'); ms.textContent = d.macdTxt; ms.className = 'kc ' + d.macdCls;
+  const sg = document.getElementById('tech-signal'); sg.textContent = d.sig; sg.className = 'signal ' + d.sigCls;
+  if (techChart) techChart.destroy();
+  techChart = new Chart(document.getElementById('chTech'), {
+    type: 'line',
+    data: { labels: techWeeks, datasets: [
+      { label: 'Precio', data: d.prices, borderColor: '#1d4ed8', backgroundColor: '#1d4ed818', tension: 0.3, fill: true, pointRadius: 2 },
+      { label: 'MA20', data: d.ma20, borderColor: '#d97706', borderDash: [4,3], tension: 0.3, fill: false, pointRadius: 0 },
+      { label: 'MA50', data: d.ma50, borderColor: '#16a34a', borderDash: [6,4], tension: 0.3, fill: false, pointRadius: 0 }
+    ]},
+    options: BASE
+  });
+  if (rsiChart) rsiChart.destroy();
+  rsiChart = new Chart(document.getElementById('chRSI'), {
+    type: 'line',
+    data: { labels: techWeeks, datasets: [{ label: 'RSI', data: d.rsiArr, borderColor: '#7c3aed', backgroundColor: '#7c3aed12', tension: 0.3, fill: true, pointRadius: 2 }] },
+    options: { ...BASE, scales: { ...BASE.scales, y: { ...BASE.scales.y, min: 20, max: 90, ticks: { ...BASE.scales.y.ticks, stepSize: 10 } } } }
+  });
+}
+selTech('SP500', document.querySelector('#p-tech .rbtn'));
+
+// ============ SIMULADOR PORTAFOLIO ============
+const ASSETS = [
+  { name: 'S&P 500 ETF', ret: 10.2, vol: 15.8, color: '#1d4ed8' },
+  { name: 'Bonos EEUU (TLT)', ret: 4.3, vol: 5.2, color: '#16a34a' },
+  { name: 'Oro', ret: 8.1, vol: 12.4, color: '#d97706' },
+  { name: 'Bitcoin', ret: 42.0, vol: 68.0, color: '#7c3aed' },
+  { name: 'Acciones LATAM', ret: 12.5, vol: 22.0, color: '#dc2626' },
+  { name: 'Cash / Money Market', ret: 4.5, vol: 0.5, color: '#6b7280' }
+];
+let portW = [40, 20, 15, 5, 15, 5];
+let portDonut = null, portGrow = null;
+
+function buildSliders() {
+  document.getElementById('port-sliders').innerHTML = ASSETS.map((a, i) =>
+    `<div class="inprow">
+      <span class="inplbl"><span class="lsq" style="background:${a.color}"></span>${a.name}</span>
+      <input type="range" min="0" max="100" step="1" value="${portW[i]}" oninput="upPort(${i},+this.value)">
+      <span class="inpval" id="pw${i}">${portW[i]}%</span>
+    </div>`
+  ).join('');
+}
+
+function upPort(idx, val) {
+  portW[idx] = val;
+  document.getElementById('pw' + idx).textContent = val + '%';
+  renderPort();
+}
+
+function renderPort() {
+  const tot = portW.reduce((a, b) => a + b, 0);
+  const ret = portW.reduce((s, w, i) => s + w / 100 * ASSETS[i].ret, 0);
+  const vol = Math.sqrt(portW.reduce((s, w, i) => s + Math.pow(w / 100 * ASSETS[i].vol, 2), 0));
+  const sh = vol > 0 ? ((ret - 4.3) / vol).toFixed(2) : '—';
+  const prRet = document.getElementById('pr-ret'); prRet.textContent = ret.toFixed(1) + '%'; prRet.className = 'port-v ' + (ret > 6 ? 'up' : 'nt');
+  document.getElementById('pr-vol').textContent = vol.toFixed(1) + '%';
+  const prSh = document.getElementById('pr-sh'); prSh.textContent = sh; prSh.className = 'port-v ' + (+sh > 1 ? 'up' : +sh > 0.5 ? 'nt' : 'dn');
+  const prTot = document.getElementById('pr-tot'); prTot.textContent = tot + '%'; prTot.className = 'port-v ' + (tot === 100 ? 'up' : tot > 100 ? 'dn' : 'nt');
+
+  if (portDonut) portDonut.destroy();
+  portDonut = new Chart(document.getElementById('chPortD'), {
+    type: 'doughnut',
+    data: { labels: ASSETS.map(a => a.name), datasets: [{ data: portW, backgroundColor: ASSETS.map(a => a.color + 'CC'), borderWidth: 1, borderColor: isDark ? '#111827' : '#fff' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: tc, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }
+  });
+
+  const retD = ret / 100, volD = vol / 100;
+  const base = Array.from({ length: 6 }, (_, y) => Math.round(10000 * Math.pow(1 + retD, y)));
+  const bull = Array.from({ length: 6 }, (_, y) => Math.round(10000 * Math.pow(1 + retD + volD * 0.5, y)));
+  const bear = Array.from({ length: 6 }, (_, y) => Math.round(10000 * Math.pow(1 + retD - volD * 0.5, y)));
+  if (portGrow) portGrow.destroy();
+  portGrow = new Chart(document.getElementById('chPortG'), {
+    type: 'line',
+    data: { labels: ['Año 0','Año 1','Año 2','Año 3','Año 4','Año 5'], datasets: [
+      { label: 'Base', data: base, borderColor: '#1d4ed8', backgroundColor: '#1d4ed810', tension: 0.3, fill: true, pointRadius: 3 },
+      { label: 'Bull', data: bull, borderColor: '#16a34a', borderDash: [4,3], tension: 0.3, fill: false, pointRadius: 2 },
+      { label: 'Bear', data: bear, borderColor: '#dc2626', borderDash: [4,3], tension: 0.3, fill: false, pointRadius: 2 }
+    ]},
+    options: { ...BASE, plugins: { legend: { display: true, labels: { color: tc, font: { size: 10 }, boxWidth: 10 } } }, scales: { ...BASE.scales, y: { ...BASE.scales.y, ticks: { ...BASE.scales.y.ticks, callback: v => '$' + v.toLocaleString() } } } }
+  });
+}
+buildSliders();
+renderPort();
+
+// ============ MACRO — BONOS 10Y ============
+const bonData = [10.2, 11.4, 4.32, 6.8, 4.67, 2.51, 1.74];
+new Chart(document.getElementById('chBonos'), {
+  type: 'bar',
+  data: { labels: ['Ecuador','Colombia','EEUU','Perú','UK','Alemania','China'], datasets: [{ label: '10Y %', data: bonData, backgroundColor: bonData.map(v => v > 8 ? 'rgba(220,38,38,0.75)' : v > 5 ? 'rgba(217,119,6,0.75)' : 'rgba(29,78,216,0.65)') }] },
+  options: { ...BASE, indexAxis: 'y', scales: { x: { ...BASE.scales.x, ticks: { ...BASE.scales.x.ticks, callback: v => v + '%' } }, y: BASE.scales.y } }
+});
+
+// ============ COMMODITIES ============
+const commV = [4.2, 8.3, 12.4, -2.1, 3.4, 9.2, -8.1];
+new Chart(document.getElementById('chComm'), {
+  type: 'bar',
+  data: { labels: ['Petróleo','Cobre','Oro','Soya','Banano','Café','Gas Nat.'], datasets: [{ label: 'Var % 30d', data: commV, backgroundColor: commV.map(v => v >= 0 ? 'rgba(22,163,74,0.75)' : 'rgba(220,38,38,0.75)') }] },
+  options: { ...BASE, scales: { ...BASE.scales, y: { ...BASE.scales.y, ticks: { ...BASE.scales.y.ticks, callback: v => v + '%' } } } }
+});
+</script>
+</body>
+</html>
